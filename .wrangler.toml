@@ -1,0 +1,16 @@
+name = "chpt7"
+compatibility_date = "2024-01-01"
+main = "visualiztion-offline.html"
+
+[site]
+bucket = "./"
+entry-point = "visualiztion-offline.html"
+
+[[redirects]]
+from = "/*"
+to = "/visualiztion-offline.html"
+status = 302
+
+[build]
+command = ""
+cwd = ""
