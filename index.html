@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>第7章 数据可视化综合应用</title>
+    <!-- 使用多个可靠的CDN源作为备选 -->
+    <script src="https://unpkg.com/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script>
+        // 备选CDN加载失败时的本地降级方案
+        if (typeof echarts === 'undefined') {
+            document.write('<script src="https://cdn.staticfile.org/echarts/5.4.3/echarts.min.js"><\/script>');
+        }
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* 粉白色细闪效果 */
+        .sparkle {
+            position: fixed;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: sparkle 3s linear infinite;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        @keyframes sparkle {
+            0% {
+                opacity: 0;
+                transform: translateY(0) scale(0);
+            }
+            50% {
+                opacity: 1;
+                transform: translateY(-20px) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-40px) scale(0);
+            }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 60px;
+            position: relative;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            background: linear-gradient(45deg, #fff, #f8b4d9);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+            text-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { filter: brightness(1); }
+            to { filter: brightness(1.2); }
+        }
+
+        .subtitle {
+            font-size: 1.3rem;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 300;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+            gap: 40px;
+            margin-bottom: 60px;
+        }
+
+        .card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 248, 252, 0.95) 100%);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, 
+                transparent 30%, 
+                rgba(147, 51, 234, 0.1) 50%, 
+                transparent 70%);
+            transform: rotate(45deg);
+            transition: all 0.6s;
+            opacity: 0;
+        }
+
+        .card:hover::before {
+            animation: shine 0.6s ease-in-out;
+        }
+
+        @keyframes shine {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); opacity: 0; }
+        }
+
+        .card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 30px 60px rgba(147, 51, 234, 0.3);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .card-number {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+            font-size: 1.1rem;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            color: #4a5568;
+            font-weight: 600;
+        }
+
+        .chart-container {
+            height: 400px;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .chart-description {
+            color: #718096;
+            line-height: 1.6;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(147, 51, 234, 0.05);
+            border-radius: 10px;
+            border-left: 4px solid #9333ea;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::after {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(147, 51, 234, 0.3);
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+        }
+
+        .wave-info {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .equation {
+            background: rgba(147, 51, 234, 0.08);
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            display: inline-block;
+            margin: 5px 0;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 动态细闪效果 -->
+    <div id="sparkles"></div>
+
+    <div class="container">
+        <header>
+            <h1>第7章 数据可视化综合应用</h1>
+            <p class="subtitle">基于ECharts的交互式数据可视化展示</p>
+        </header>
+
+        <main class="cards-grid">
+            <!-- 习题1: 3D柱形图 -->
+            <section class="card">
+                <div class="card-header">
+                    <div class="card-number">1</div>
+                    <h2 class="card-title">3D 柱形图绘制</h2>
+                </div>
+                <div id="bar3d" class="chart-container"></div>
+                <div class="controls">
+                    <button class="btn" onclick="regenerateBarChart()">重新生成数据</button>
+                    <button class="btn" onclick="animateBarChart()">动画效果</button>
+                </div>
+                <div class="chart-description">
+                    <strong>目标：</strong>在xOy平面对角线位置生成4个柱子，设定随机高度，配置柱子样式、坐标轴标签及标题。
+                    <br><br>
+                    <strong>特性：</strong>支持鼠标悬停显示详细数值，具备3D旋转视角，渐变色彩填充。
+                </div>
+            </section>
+
+            <!-- 习题2: 衰减正弦波动画 -->
+            <section class="card">
+                <div class="card-header">
+                    <div class="card-number">2</div>
+                    <h2 class="card-title">衰减正弦波动画</h2>
+                </div>
+                <div id="wave" class="chart-container"></div>
+                <div class="controls">
+                    <button class="btn" onclick="startWaveAnimation()">开始动画</button>
+                    <button class="btn" onclick="stopWaveAnimation()">停止动画</button>
+                    <button class="btn" onclick="resetWave()">重置波形</button>
+                </div>
+                <div class="wave-info">
+                    <strong>衰减正弦波方程：</strong>
+                    <div class="equation">y = e^(-0.1x) × sin(x)</div>
+                    <p style="margin-top: 10px;">波形向右推进效果，实时相位移动动画展示</p>
+                </div>
+            </section>
+
+            <!-- 习题3: 跨国航线地图 -->
+            <section class="card">
+                <div class="card-header">
+                    <div class="card-number">3</div>
+                    <h2 class="card-title">跨国航线地图</h2>
+                </div>
+                <div id="map" class="chart-container"></div>
+                <div class="controls">
+                    <button class="btn" onclick="showFlightPath()">显示航线</button>
+                    <button class="btn" onclick="animateFlight()">飞行动画</button>
+                </div>
+                <div class="chart-description">
+                    <strong>目标：</strong>绘制从北京飞往吉隆坡的航线图，使用圆柱等积投影，标记两城市坐标，绘制海岸线、国家边界及蓝色大圆航线。
+                    <br><br>
+                    <strong>航线信息：</strong>北京（39.90°N, 116.40°E）→ 吉隆坡（3.13°N, 101.68°E）
+                </div>
+            </section>
+
+            <!-- 习题4: 复杂函数的3D曲面 -->
+            <section class="card">
+                <div class="card-header">
+                    <div class="card-number">4</div>
+                    <h2 class="card-title">Peaks函数3D曲面</h2>
+                </div>
+                <div id="surface" class="chart-container"></div>
+                <div class="controls">
+                    <button class="btn" onclick="rotateSurface()">旋转视角</button>
+                    <button class="btn" onclick="changeColorScheme()">切换配色</button>
+                </div>
+                <div class="chart-description">
+                    <strong>目标：</strong>绘制经典Peaks函数三维曲面，设定x/y定义域[-3,3]，配置色彩映射、平滑度，添加颜色条辅助阅读。
+                    <br><br>
+                    <strong>特性：</strong>支持鼠标交互旋转，多种色彩映射方案，平滑插值渲染。
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>© 2024 数据可视化综合应用 | 第7章课后习题展示</p>
+            <p>基于ECharts 5.4.3构建 | 粉紫色渐变主题设计</p>
+        </footer>
+    </div>
+
+    <script>
+        // 初始化所有图表
+        let bar3dChart, waveChart, mapChart, surfaceChart;
+        let waveAnimationId, flightAnimationId;
+        let currentColorScheme = 0;
+
+        // 创建细闪效果
+        function createSparkles() {
+            const sparklesContainer = document.getElementById('sparkles');
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => {
+                    const sparkle = document.createElement('div');
+                    sparkle.className = 'sparkle';
+                    sparkle.style.left = Math.random() * 100 + '%';
+                    sparkle.style.top = Math.random() * 100 + '%';
+                    sparkle.style.animationDelay = Math.random() * 3 + 's';
+                    sparklesContainer.appendChild(sparkle);
+                    
+                    setTimeout(() => sparkle.remove(), 3000);
+                }, i * 200);
+            }
+        }
+
+        // 定期创建细闪
+        setInterval(createSparkles, 5000);
+        createSparkles();
+
+        // 1. 3D柱形图初始化
+        function initBar3DChart() {
+            bar3dChart = echarts.init(document.getElementById('bar3d'));
+            
+            const data = [];
+            for (let i = 0; i < 4; i++) {
+                data.push([i + 1, i + 1, Math.floor(Math.random() * 10) + 1]);
+            }
+
+            const option = {
+                title: {
+                    text: '3D对角柱形图',
+                    textStyle: {
+                        color: '#4a5568',
+                        fontWeight: 'bold'
+                    }
+                },
+                tooltip: {
+                    formatter: function(params) {
+                        return `X: ${params.value[0]}<br/>Y: ${params.value[1]}<br/>Z: ${params.value[2]}`;
+                    }
+                },
+                visualMap: {
+                    max: 10,
+                    min: 1,
+                    inRange: {
+                        color: ['#fbbf24', '#f59e0b', '#d97706', '#92400e']
+                    },
+                    textStyle: {
+                        color: '#4a5568'
+                    }
+                },
+                xAxis3D: {
+                    type: 'value',
+                    name: 'X轴',
+                    nameTextStyle: {
+                        color: '#4a5568'
+                    },
+                    axisLine: {
+                        lineStyle: {
+                            color: '#9333ea'
+                        }
+                    }
+                },
+                yAxis3D: {
+                    type: 'value',
+                    name: 'Y轴',
+                    nameTextStyle: {
+                        color: '#4a5568'
+                    },
+                    axisLine: {
+                        lineStyle: {
+                            color: '#9333ea'
+                        }
+                    }
+                },
+                zAxis3D: {
+                    type: 'value',
+                    name: 'Z轴',
+                    nameTextStyle: {
+                        color: '#4a5568'
+                    },
+                    axisLine: {
+                        lineStyle: {
+                            color: '#9333ea'
+                        }
+                    }
+                },
+                grid3D: {
+                    boxWidth: 200,
+                    boxDepth: 200,
+                    boxHeight: 200,
+                    viewControl: {
+                        beta: 20,
+                        alpha: 45
+                    },
+                    light: {
+                        main: {
+                            intensity: 1.2,
+                            shadow: true
+                        },
+                        ambient: {
+                            intensity: 0.3
+                        }
+                    }
+                },
+                series: [{
+                    type: 'bar3D',
+                    data: data,
+                    shading: 'lambert',
+                    emphasis: {
+                        label: {
+                            show: true
+                        }
+                    }
+                }]
+            };
+
+            bar3dChart.setOption(option);
+        }
+
+        // 重新生成柱状图数据
+        function regenerateBarChart() {
+            const data = [];
+            for (let i = 0; i < 4; i++) {
+                data.push([i + 1, i + 1, Math.floor(Math.random() * 10) + 1]);
+            }
+            
+            bar3dChart.setOption({
+                series: [{
+                    data: data
+                }]
+            });
+        }
+
+        // 柱状图动画
+        function animateBarChart() {
+            bar3dChart.setOption({
+                grid3D: {
+                    viewControl: {
+                        beta: 20,
+                        alpha: 45,
+                        animation: true,
+                        animationDurationUpdate: 3000
+                    }
+                }
+            });
+            
+            setTimeout(() => {
+                bar3dChart.setOption({
+                    grid3D: {
+                        viewControl: {
+                            beta: 60,
+                            alpha: 135
+                        }
+                    }
+                });
+            }, 100);
+        }
+
+        // 2. 衰减正弦波初始化
+        function initWaveChart() {
+            waveChart = echarts.init(document.getElementById('wave'));
+            
+            const x = [];
+            const y = [];
+            for (let i = 0; i <= 314; i++) {
+                x.push(i * 0.1);
+                y.push(Math.exp(-0.1 * i * 0.1) * Math.sin(i * 0.1));
+            }
+
+            const option = {
+                title: {
+                    text: '衰减正弦波',
+                    textStyle: {
+                        color: '#4a5568',
+                        fontWeight: 'bold'
+                    }
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: function(params) {
+                        const x = params[0].value[0].toFixed(2);
+                        const y = params[0].value[1].toFixed(4);
+                        return `x: ${x}<br/>y: ${y}`;
+                    }
+                },
+                xAxis: {
+                    type: 'value',
+                    name: 'x',
+                    nameTextStyle: {
+                        color: '#4a5568'
+                    },
+                    axisLine: {
+                        lineStyle: {
+                            color: '#9333ea'
+                        }
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: 'y',
+                    nameTextStyle: {
+                        color: '#4a5568'
+                    },
+                    axisLine: {
+                        lineStyle: {
+                            color: '#9333ea'
+                        }
+                    }
+                },
+                series: [{
+                    name: '衰减正弦波',
+                    type: 'line',
+                    smooth: true,
+                    symbol: 'none',
+                    lineStyle: {
+                        width: 3,
+                        color: '#667eea'
+                    },
+                    areaStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: 'rgba(102, 126, 234, 0.3)' },
+                            { offset: 1, color: 'rgba(102, 126, 234, 0.05)' }
+                        ])
+                    },
+                    data: x.map((val, idx) => [val, y[idx]])
+                }]
+            };
+
+            waveChart.setOption(option);
+        }
+
+        // 波形动画相关变量
+        let wavePhase = 0;
+
+        function startWaveAnimation() {
+            if (waveAnimationId) return;
+            
+            function animate() {
+                wavePhase += 0.1;
+                const x = [];
+                const y = [];
+                for (let i = 0; i <= 314; i++) {
+                    const xi = i * 0.1;
+                    x.push(xi);
+                    y.push(Math.exp(-0.1 * xi) * Math.sin(xi + wavePhase));
+                }
+                
+                waveChart.setOption({
+                    series: [{
+                        data: x.map((val, idx) => [val, y[idx]])
+                    }]
+                });
+                
+                waveAnimationId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        function stopWaveAnimation() {
+            if (waveAnimationId) {
+                cancelAnimationFrame(waveAnimationId);
+                waveAnimationId = null;
+            }
+        }
+
+        function resetWave() {
+            stopWaveAnimation();
+            wavePhase = 0;
+            initWaveChart();
+        }
+
+        // 3. 航线地图初始化
+        function initMapChart() {
+            mapChart = echarts.init(document.getElementById('map'));
+            
+            // 简化的航线数据
+            const flightPath = [
+                [116.40, 39.90],   // 北京
+                [118.00, 38.00],
+                [120.00, 36.00],
+                [122.00, 34.00],
+                [124.00, 30.00],
+                [126.00, 25.00],
+                [128.00, 20.00],
+                [130.00, 15.00],
+                [132.00, 10.00],
+                [134.00, 8.00],
+                [136.00, 6.00],
+                [138.00, 5.00],
+                [140.00, 4.00],
+                [142.00, 3.50],
+                [144.00, 3.20],
+                [146.00, 3.15],
+                [148.00, 3.14],
+                [101.68, 3.13]    // 吉隆坡
+            ];
+
+            const option = {
+                title: {
+                    text: '北京-吉隆坡航线图',
+                    textStyle: {
+                        color: '#4a5568',
+                        fontWeight: 'bold'
+                    }
+                },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: function(params) {
+                        if (params.seriesType === 'scatter') {
+                            return params.name;
+                        }
+                        return '航线';
+                    }
+                },
+                geo: {
+                    map: 'world',
+                    roam: true,
+                    label: {
+                        emphasis: {
+                            show: false
+                        }
+                    },
+                    itemStyle: {
+                        normal: {
+                            areaColor: '#f3f4f6',
+                            borderColor: '#9333ea'
+                        },
+                        emphasis: {
+                            areaColor: '#e9d5ff'
+                        }
+                    }
+                },
+                series: [
+                    {
+                        name: '航线',
+                        type: 'lines',
+                        zlevel: 2,
+                        effect: {
+                            show: true,
+                            period: 6,
+                            trailLength: 0.7,
+                            color: '#667eea',
+                            symbolSize: 3
+                        },
+                        lineStyle: {
+                            normal: {
+                                color: '#667eea',
+                                width: 2,
+                                opacity: 0.6,
+                                curveness: 0.2
+                            }
+                        },
+                        data: [{
+                            fromName: '北京',
+                            toName: '吉隆坡',
+                            coords: flightPath
+                        }]
+                    },
+                    {
+                        name: '城市',
+                        type: 'scatter',
+                        coordinateSystem: 'geo',
+                        zlevel: 2,
+                        rippleEffect: {
+                            brushType: 'stroke'
+                        },
+                        label: {
+                            normal: {
+                                show: true,
+                                position: 'right',
+                                formatter: '{b}'
+                            }
+                        },
+                        symbolSize: 12,
+                        itemStyle: {
+                            normal: {
+                                color: '#9333ea'
+                            }
+                        },
+                        data: [
+                            {name: '北京', value: [116.40, 39.90]},
+                            {name: '吉隆坡', value: [101.68, 3.13]}
+                        ]
+                    }
+                ]
+            };
+
+            // 注册世界地图（简化版本）
+            echarts.registerMap('world', {
+                "type": "FeatureCollection",
+                "features": []
+            });
+
+            mapChart.setOption(option);
+        }
+
+        function showFlightPath() {
+            mapChart.setOption({
+                series: [{
+                    type: 'lines',
+                    effect: {
+                        show: true
+                    }
+                }]
+            });
+        }
+
+        function animateFlight() {
+            mapChart.setOption({
+                series: [{
+                    type: 'lines',
+                    effect: {
+                        show: true,
+                        period: 3,
+                        trailLength: 0.1
+                    }
+                }]
+            });
+        }
+
+        // 4. Peaks函数3D曲面初始化
+        function initSurfaceChart() {
+            surfaceChart = echarts.init(document.getElementById('surface'));
+            
+            // 生成Peaks函数数据
+            const data = [];
+            for (let i = -30; i <= 30; i++) {
+                for (let j = -30; j <= 30; j++) {
+                    const x = i * 0.1;
+                    const y = j * 0.1;
+                    const z = 3 * (1 - x) * (1 - x) * Math.exp(-(x * x) - (y + 1) * (y + 1)) 
+                           - 10 * (x / 5 - x * x * x - y * y * y * y * y) * Math.exp(-(x * x) - (y * y)) 
+                           - 1 / 3 * Math.exp(-(x + 1) * (x + 1) - (y * y));
+                    data.push([x, y, z]);
+                }
+            }
+
+            const option = {
+                title: {
+                    text: 'Peaks函数3D曲面',
+                    textStyle: {
+                        color: '#4a5568',
+                        fontWeight: 'bold'
+                    }
+                },
+                tooltip: {
+                    formatter: function(params) {
+                        return `X: ${params.value[0].toFixed(2)}<br/>Y: ${params.value[1].toFixed(2)}<br/>Z: ${params.value[2].toFixed(3)}`;
+                    }
+                },
+                visualMap: {
+                    show: true,
+                    min: -8,
+                    max: 8,
+                    inRange: {
+                        color: ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981']
+                    },
+                    textStyle: {
+                        color: '#4a5568'
+                    }
+                },
+                xAxis3D: {
+                    type: 'value',
+                    name: 'X轴',
+                    nameTextStyle: {
+                        color: '#4a5568'
+                    }
+                },
+                yAxis3D: {
+                    type: 'value',
+                    name: 'Y轴',
+                    nameTextStyle: {
+                        color: '#4a5568'
+                    }
+                },
+                zAxis3D: {
+                    type: 'value',
+                    name: 'Z轴',
+                    nameTextStyle: {
+                        color: '#4a5568'
+                    }
+                },
+                grid3D: {
+                    boxWidth: 200,
+                    boxDepth: 200,
+                    boxHeight: 200,
+                    viewControl: {
+                        beta: 30,
+                        alpha: 45
+                    }
+                },
+                series: [{
+                    type: 'surface',
+                    data: data,
+                    shading: 'realistic',
+                    realisticMaterial: {
+                        roughness: 0.3,
+                        metalness: 0.3
+                    }
+                }]
+            };
+
+            surfaceChart.setOption(option);
+        }
+
+        function rotateSurface() {
+            let alpha = 45;
+            const rotation = setInterval(() => {
+                alpha += 2;
+                if (alpha >= 405) {
+                    clearInterval(rotation);
+                    alpha = 45;
+                }
+                surfaceChart.setOption({
+                    grid3D: {
+                        viewControl: {
+                            alpha: alpha
+                        }
+                    }
+                });
+            }, 20);
+        }
+
+        const colorSchemes = [
+            ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'],
+            ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e'],
+            ['#06b6d4', '#0ea5e9', '#3b82f6', '#6366f1', '#8b5cf6'],
+            ['#f43f5e', '#ec4899', '#d946ef', '#c026d3', '#a21caf']
+        ];
+
+        function changeColorScheme() {
+            currentColorScheme = (currentColorScheme + 1) % colorSchemes.length;
+            surfaceChart.setOption({
+                visualMap: {
+                    inRange: {
+                        color: colorSchemes[currentColorScheme]
+                    }
+                }
+            });
+        }
+
+        // 初始化所有图表
+        window.addEventListener('DOMContentLoaded', function() {
+            initBar3DChart();
+            initWaveChart();
+            initMapChart();
+            initSurfaceChart();
+
+            // 窗口大小调整时重新渲染图表
+            window.addEventListener('resize', function() {
+                bar3dChart.resize();
+                waveChart.resize();
+                mapChart.resize();
+                surfaceChart.resize();
+            });
+        });
+    </script>
+</body>
+</html>

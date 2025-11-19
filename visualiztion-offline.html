@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>第7章 数据可视化综合应用</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #f8b4d9 0%, #e879f9 25%, #c084fc 50%, #a855f7 75%, #9333ea 100%);
+            min-height: 100vh;
+            color: #333;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* 粉白色细闪效果 */
+        .sparkle {
+            position: fixed;
+            width: 6px;
+            height: 6px;
+            background: linear-gradient(45deg, rgba(255, 255, 255, 0.9), rgba(248, 180, 217, 0.8));
+            border-radius: 50%;
+            pointer-events: none;
+            animation: sparkle 3s linear infinite;
+            box-shadow: 0 0 15px rgba(248, 180, 217, 0.6), 0 0 25px rgba(196, 181, 253, 0.3);
+        }
+
+        @keyframes sparkle {
+            0% {
+                opacity: 0;
+                transform: translateY(0) scale(0);
+            }
+            50% {
+                opacity: 1;
+                transform: translateY(-20px) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-40px) scale(0);
+            }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 60px;
+            position: relative;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            background: linear-gradient(45deg, #fff, #f8b4d9, #e879f9, #c084fc);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+            text-shadow: 0 0 30px rgba(248, 180, 217, 0.4);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { filter: brightness(1); }
+            to { filter: brightness(1.2); }
+        }
+
+        .subtitle {
+            font-size: 1.3rem;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 300;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+            gap: 40px;
+            margin-bottom: 60px;
+        }
+
+        .card {
+            background: linear-gradient(135deg, rgba(255, 240, 246, 0.85) 0%, rgba(250, 232, 255, 0.85) 50%, rgba(243, 232, 255, 0.85) 100%);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(168, 85, 247, 0.15), 0 10px 25px rgba(196, 181, 253, 0.1);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, 
+                transparent 30%, 
+                rgba(232, 121, 249, 0.15) 50%, 
+                transparent 70%);
+            transform: rotate(45deg);
+            transition: all 0.6s;
+            opacity: 0;
+        }
+
+        .card:hover::before {
+            animation: shine 0.6s ease-in-out;
+        }
+
+        @keyframes shine {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); opacity: 0; }
+        }
+
+        .card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 30px 60px rgba(168, 85, 247, 0.4), 0 15px 35px rgba(196, 181, 253, 0.3);
+            background: linear-gradient(135deg, rgba(255, 240, 246, 0.9) 0%, rgba(250, 232, 255, 0.9) 50%, rgba(243, 232, 255, 0.9) 100%);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .card-number {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+            font-size: 1.1rem;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            color: #4a5568;
+            font-weight: 600;
+        }
+
+        .chart-container {
+            height: 400px;
+            margin: 20px 0;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 240, 246, 0.3);
+            border-radius: 15px;
+            overflow: hidden;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(196, 181, 253, 0.2);
+        }
+
+        .chart-canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 10px;
+        }
+
+        .chart-description {
+            color: #718096;
+            line-height: 1.6;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(147, 51, 234, 0.05);
+            border-radius: 10px;
+            border-left: 4px solid #9333ea;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #e879f9, #c084fc, #a855f7);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(168, 85, 247, 0.3);
+        }
+
+        .btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::after {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(196, 181, 253, 0.4);
+            background: linear-gradient(135deg, #f0abfc, #d8b4fe, #c084fc);
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+        }
+
+        .wave-info {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            border-left: 4px solid #667eea;
+        }
+
+        .equation {
+            background: rgba(147, 51, 234, 0.08);
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            display: inline-block;
+            margin: 5px 0;
+        }
+
+        .loading {
+            color: #9333ea;
+            font-size: 1.2rem;
+            text-align: center;
+            padding: 20px;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 动态细闪效果 -->
+    <div id="sparkles"></div>
+
+    <div class="container">
+        <header>
+            <h1>第7章 数据可视化综合应用</h1>
+            <p class="subtitle">基于Canvas的离线数据可视化展示</p>
+        </header>
+
+        <main class="cards-grid">
+            <!-- 习题1: 3D柱形图 -->
+            <section class="card">
+                <div class="card-header">
+                    <div class="card-number">1</div>
+                    <h2 class="card-title">3D 柱形图绘制</h2>
+                </div>
+                <div id="bar3d" class="chart-container">
+                    <canvas id="bar3d-canvas" class="chart-canvas"></canvas>
+                </div>
+                <div class="controls">
+                    <button class="btn" onclick="regenerateBarChart()">重新生成数据</button>
+                    <button class="btn" onclick="animateBarChart()">动画效果</button>
+                </div>
+                <div class="chart-description">
+                    <strong>目标：</strong>在xOy平面对角线位置生成4个柱子，设定随机高度，配置柱子样式、坐标轴标签及标题。
+                    <br><br>
+                    <strong>特性：</strong>支持鼠标悬停显示详细数值，渐变色彩填充，动画效果。
+                </div>
+            </section>
+
+            <!-- 习题2: 衰减正弦波动画 -->
+            <section class="card">
+                <div class="card-header">
+                    <div class="card-number">2</div>
+                    <h2 class="card-title">衰减正弦波动画</h2>
+                </div>
+                <div id="wave" class="chart-container">
+                    <canvas id="wave-canvas" class="chart-canvas"></canvas>
+                </div>
+                <div class="controls">
+                    <button class="btn" onclick="startWaveAnimation()">开始动画</button>
+                    <button class="btn" onclick="stopWaveAnimation()">停止动画</button>
+                    <button class="btn" onclick="resetWave()">重置波形</button>
+                </div>
+                <div class="wave-info">
+                    <strong>衰减正弦波方程：</strong>
+                    <div class="equation">y = e^(-0.1x) × sin(x)</div>
+                    <p style="margin-top: 10px;">波形向右推进效果，实时相位移动动画展示</p>
+                </div>
+            </section>
+
+            <!-- 习题3: 跨国航线地图 -->
+            <section class="card">
+                <div class="card-header">
+                    <div class="card-number">3</div>
+                    <h2 class="card-title">跨国航线地图</h2>
+                </div>
+                <div id="map" class="chart-container">
+                    <canvas id="map-canvas" class="chart-canvas"></canvas>
+                </div>
+                <div class="controls">
+                    <button class="btn" onclick="showFlightPath()">显示航线</button>
+                    <button class="btn" onclick="animateFlight()">飞行动画</button>
+                </div>
+                <div class="chart-description">
+                    <strong>目标：</strong>绘制从北京飞往吉隆坡的航线图，标记两城市坐标，绘制大圆航线。
+                    <br><br>
+                    <strong>航线信息：</strong>北京（39.90°N, 116.40°E）→ 吉隆坡（3.13°N, 101.68°E）
+                </div>
+            </section>
+
+            <!-- 习题4: 复杂函数的3D曲面 -->
+            <section class="card">
+                <div class="card-header">
+                    <div class="card-number">4</div>
+                    <h2 class="card-title">Peaks函数3D曲面</h2>
+                </div>
+                <div id="surface" class="chart-container">
+                    <canvas id="surface-canvas" class="chart-canvas"></canvas>
+                </div>
+                <div class="controls">
+                    <button class="btn" onclick="rotateSurface()" id="rotate-btn">旋转视角</button>
+                    <button class="btn" onclick="changeColorScheme()">切换配色</button>
+                </div>
+                <div class="chart-description">
+                    <strong>目标：</strong>绘制经典Peaks函数三维曲面，设定x/y定义域[-3,3]，配置色彩映射、平滑度。
+                    <br><br>
+                    <strong>特性：</strong>支持多角度旋转，多种色彩映射方案，网格化渲染。
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>© 2024 数据可视化综合应用 | 第7章课后习题展示</p>
+            <p>完全离线Canvas实现 | 粉紫色渐变主题设计</p>
+        </footer>
+    </div>
+
+    <script>
+        // 全局变量
+        let barData = [], wavePhase = 0, waveAnimationId = null, flightAnimationId = null;
+        let currentColorScheme = 0, surfaceRotation = 0, flightProgress = 0, surfaceAnimationId = null;
+        let canvases = {};
+
+        // 粉紫色颜色方案
+        const colorSchemes = [
+            ['#f8b4d9', '#e879f9', '#c084fc', '#a855f7', '#9333ea'],
+            ['#fbcfe8', '#f9a8d4', '#e879f9', '#d8b4fe', '#c084fc'],
+            ['#fce7f3', '#fbcfe8', '#f9a8d4', '#e879f9', '#d8b4fe'],
+            ['#fdf2f8', '#fce7f3', '#fbcfe8', '#f9a8d4', '#e879f9']
+        ];
+
+        // 初始化所有画布
+        function initCanvases() {
+            // 初始化所有Canvas元素
+            ['bar3d', 'wave', 'map', 'surface'].forEach(id => {
+                const canvas = document.getElementById(id + '-canvas');
+                const container = document.getElementById(id);
+                if (canvas && container) {
+                    canvas.width = container.offsetWidth;
+                    canvas.height = container.offsetHeight;
+                    canvases[id] = canvas;
+                }
+            });
+
+            // 初始化柱状图数据
+            regenerateBarChartData();
+            
+            // 绘制初始图表
+            drawBarChart();
+            drawWaveChart();
+            drawMapChart(false); // 初始不显示飞行
+            drawSurfaceChart();
+        }
+
+        // 生成柱状图数据
+        function regenerateBarChartData() {
+            barData = [];
+            for (let i = 0; i < 4; i++) {
+                barData.push({
+                    x: i + 1,
+                    y: i + 1,
+                    z: Math.random() * 10 + 1
+                });
+            }
+        }
+
+        // 绘制3D柱状图
+        function drawBarChart() {
+            const canvas = canvases.bar3d;
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            // 清空画布
+            ctx.clearRect(0, 0, width, height);
+            
+            // 绘制标题
+            ctx.fillStyle = '#4a5568';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('3D对角柱形图', width / 2, 25);
+            
+            // 计算布局 - 调整位置使其完全显示
+            const barWidth = Math.min(50, width / 12);
+            const barDepth = barWidth * 0.6;
+            const maxHeight = height * 0.45; // 减小高度
+            const centerX = width / 2;
+            const centerY = height * 0.75; // 下移位置
+            
+            const colors = ['#e879f9', '#c084fc', '#a855f7', '#9333ea'];
+            
+            barData.forEach((bar, index) => {
+                const barHeight = (bar.z / 10) * maxHeight;
+                const x = centerX - (barDepth * 1.5) + index * (barWidth + 15);
+                const y = centerY - barHeight;
+                
+                // 计算3D效果坐标
+                const offsetX = barDepth * 0.5;
+                const offsetY = barDepth * 0.3;
+                
+                // 绘制柱子阴影
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.fillRect(x + offsetX + 2, y + offsetY + 2, barWidth, barHeight);
+                
+                // 绘制柱子主体
+                ctx.fillStyle = colors[index];
+                ctx.fillRect(x, y, barWidth, barHeight);
+                
+                // 绘制顶部（3D效果）
+                ctx.fillStyle = colors[index];
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + offsetX, y - offsetY);
+                ctx.lineTo(x + barWidth + offsetX, y - offsetY);
+                ctx.lineTo(x + barWidth, y);
+                ctx.closePath();
+                ctx.fill();
+                
+                // 绘制侧面（3D效果）
+                ctx.fillStyle = colors[index];
+                ctx.globalAlpha = 0.8;
+                ctx.beginPath();
+                ctx.moveTo(x + barWidth, y);
+                ctx.lineTo(x + barWidth + offsetX, y - offsetY);
+                ctx.lineTo(x + barWidth + offsetX, y + barHeight - offsetY);
+                ctx.lineTo(x + barWidth, y + barHeight);
+                ctx.closePath();
+                ctx.fill();
+                ctx.globalAlpha = 1;
+                
+                // 绘制数值
+                ctx.fillStyle = '#333';
+                ctx.font = 'bold 12px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(bar.z.toFixed(1), x + barWidth/2 + offsetX/2, y - offsetY - 8);
+                
+                // 绘制坐标标签
+                ctx.fillStyle = '#666';
+                ctx.font = '11px Arial';
+                ctx.fillText(`(${bar.x},${bar.y})`, x + barWidth/2 + offsetX/2, centerY + 20);
+            });
+            
+            // 绘制坐标轴
+            ctx.strokeStyle = '#a855f7';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            // X轴
+            ctx.moveTo(centerX - 80, centerY);
+            ctx.lineTo(centerX + 120, centerY);
+            // Y轴
+            ctx.moveTo(centerX - 80, centerY);
+            ctx.lineTo(centerX - 120, centerY - 40);
+            // Z轴
+            ctx.moveTo(centerX - 80, centerY);
+            ctx.lineTo(centerX - 80, centerY - maxHeight - 40);
+            ctx.stroke();
+            
+            // 坐标轴标签
+            ctx.fillStyle = '#666';
+            ctx.font = '11px Arial';
+            ctx.fillText('X', centerX + 130, centerY + 5);
+            ctx.fillText('Y', centerX - 135, centerY - 40);
+            ctx.fillText('Z', centerX - 80, centerY - maxHeight - 45);
+        }
+
+        // 绘制衰减正弦波
+        function drawWaveChart() {
+            const canvas = canvases.wave;
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            // 绘制标题
+            ctx.fillStyle = '#4a5568';
+            ctx.font = 'bold 18px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('衰减正弦波', width / 2, 30);
+            
+            const padding = 50;
+            const graphWidth = width - padding * 2;
+            const graphHeight = height - padding * 2;
+            const centerX = padding;
+            const centerY = height / 2;
+            
+            // 绘制坐标轴
+            ctx.strokeStyle = '#a855f7';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(centerX, padding);
+            ctx.lineTo(centerX, height - padding);
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(width - padding, centerY);
+            ctx.stroke();
+            
+            // 绘制波形
+            ctx.strokeStyle = '#e879f9';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            
+            for (let i = 0; i <= graphWidth; i++) {
+                const t = (i / graphWidth) * 31.4; // 0到10π
+                const x = centerX + i;
+                const y = centerY - Math.exp(-0.1 * t) * Math.sin(t + wavePhase) * graphHeight * 0.4;
+                
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            
+            ctx.stroke();
+            
+            // 绘制填充区域
+            ctx.fillStyle = 'rgba(232, 121, 249, 0.2)';
+            ctx.beginPath();
+            for (let i = 0; i <= graphWidth; i++) {
+                const t = (i / graphWidth) * 31.4;
+                const x = centerX + i;
+                const y = centerY - Math.exp(-0.1 * t) * Math.sin(t + wavePhase) * graphHeight * 0.4;
+                
+                if (i === 0) {
+                    ctx.moveTo(x, centerY);
+                    ctx.lineTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.lineTo(width - padding, centerY);
+            ctx.closePath();
+            ctx.fill();
+            
+            // 坐标轴标签
+            ctx.fillStyle = '#666';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('x', width - padding + 20, centerY + 5);
+            ctx.textAlign = 'left';
+            ctx.fillText('y', centerX + 5, padding - 10);
+        }
+
+        // 绘制航线地图
+        function drawMapChart(showFlight = false) {
+            const canvas = canvases.map;
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            // 绘制标题
+            ctx.fillStyle = '#4a5568';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('北京-吉隆坡航线图', width / 2, 25);
+            
+            // 绘制简化的世界地图
+            drawWorldMap(ctx, width, height);
+            
+            // 北京坐标 (相对位置)
+            const beijingX = width * 0.3;
+            const beijingY = height * 0.35;
+            // 吉隆坡坐标
+            const klX = width * 0.75;
+            const klY = height * 0.65;
+            
+            // 绘制大圆航线
+            const controlX = width * 0.5;
+            const controlY = height * 0.15;
+            
+            ctx.strokeStyle = '#667eea';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([10, 5]);
+            ctx.beginPath();
+            ctx.moveTo(beijingX, beijingY);
+            ctx.quadraticCurveTo(controlX, controlY, klX, klY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // 绘制飞行动画
+            if (showFlight && flightProgress > 0) {
+                const t = flightProgress;
+                const flightX = (1-t)*(1-t)*beijingX + 2*(1-t)*t*controlX + t*t*klX;
+                const flightY = (1-t)*(1-t)*beijingY + 2*(1-t)*t*controlY + t*t*klY;
+                
+                // 飞机图标
+                ctx.save();
+                ctx.translate(flightX, flightY);
+                
+                // 计算飞行角度
+                const angle = Math.atan2(klY - beijingY, klX - beijingX);
+                ctx.rotate(angle);
+                
+                // 绘制飞机
+                ctx.fillStyle = '#f59e0b';
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(-15, -5);
+                ctx.lineTo(-15, 5);
+                ctx.closePath();
+                ctx.fill();
+                
+                // 飞机尾迹
+                ctx.strokeStyle = 'rgba(245, 158, 11, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(-30, 0);
+                ctx.stroke();
+                
+                ctx.restore();
+            }
+            
+            // 绘制城市标记
+            const cities = [
+                { name: '北京', x: beijingX, y: beijingY, lat: '39.90°N', lon: '116.40°E' },
+                { name: '吉隆坡', x: klX, y: klY, lat: '3.13°N', lon: '101.68°E' }
+            ];
+            
+            cities.forEach(city => {
+                // 脉冲效果
+                if (showFlight) {
+                    ctx.fillStyle = 'rgba(147, 51, 234, 0.1)';
+                    for (let i = 3; i > 0; i--) {
+                        ctx.beginPath();
+                        ctx.arc(city.x, city.y, 15 + i * 8, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+                
+                // 外圈
+                ctx.fillStyle = 'rgba(147, 51, 234, 0.3)';
+                ctx.beginPath();
+                ctx.arc(city.x, city.y, 12, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 内圈
+                ctx.fillStyle = '#9333ea';
+                ctx.beginPath();
+                ctx.arc(city.x, city.y, 8, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 城市名称
+                ctx.fillStyle = '#333';
+                ctx.font = 'bold 14px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(city.name, city.x, city.y - 20);
+                
+                // 坐标信息
+                ctx.fillStyle = '#666';
+                ctx.font = '11px Arial';
+                ctx.fillText(`${city.lat}, ${city.lon}`, city.x, city.y + 25);
+            });
+            
+            // 添加距离和航程信息
+            const distance = 4371; // 大约距离
+            ctx.fillStyle = '#666';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(`航程约 ${distance} km`, width / 2, height - 30);
+            
+            if (showFlight && flightProgress > 0) {
+                ctx.fillStyle = '#667eea';
+                ctx.font = 'bold 12px Arial';
+                ctx.fillText(`飞行进度: ${(flightProgress * 100).toFixed(1)}%`, width / 2, height - 15);
+            }
+        }
+
+        // 绘制简化的世界地图
+        function drawWorldMap(ctx, width, height) {
+            const padding = 20;
+            const mapWidth = width - padding * 2;
+            const mapHeight = height - 80;
+            
+            // 海洋背景
+            ctx.fillStyle = '#e0f2fe';
+            ctx.fillRect(padding, 50, mapWidth, mapHeight);
+            
+            // 简化的大陆轮廓
+            ctx.fillStyle = '#f8fafc';
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 1;
+            
+            // 亚洲大陆（简化）
+            ctx.beginPath();
+            ctx.moveTo(width * 0.35, height * 0.25);
+            ctx.lineTo(width * 0.55, height * 0.2);
+            ctx.lineTo(width * 0.65, height * 0.25);
+            ctx.lineTo(width * 0.7, height * 0.35);
+            ctx.lineTo(width * 0.65, height * 0.5);
+            ctx.lineTo(width * 0.55, height * 0.55);
+            ctx.lineTo(width * 0.45, height * 0.5);
+            ctx.lineTo(width * 0.35, height * 0.4);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            
+            // 东南亚
+            ctx.beginPath();
+            ctx.moveTo(width * 0.65, height * 0.55);
+            ctx.lineTo(width * 0.8, height * 0.6);
+            ctx.lineTo(width * 0.85, height * 0.65);
+            ctx.lineTo(width * 0.75, height * 0.7);
+            ctx.lineTo(width * 0.65, height * 0.65);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            
+            // 欧洲（简化）
+            ctx.beginPath();
+            ctx.moveTo(width * 0.45, height * 0.15);
+            ctx.lineTo(width * 0.55, height * 0.1);
+            ctx.lineTo(width * 0.6, height * 0.15);
+            ctx.lineTo(width * 0.55, height * 0.2);
+            ctx.lineTo(width * 0.45, height * 0.18);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            
+            // 添加网格线
+            ctx.strokeStyle = 'rgba(203, 213, 225, 0.3)';
+            ctx.lineWidth = 0.5;
+            ctx.setLineDash([2, 3]);
+            
+            // 经线
+            for (let i = 1; i < 8; i++) {
+                const x = padding + (i / 8) * mapWidth;
+                ctx.beginPath();
+                ctx.moveTo(x, 50);
+                ctx.lineTo(x, 50 + mapHeight);
+                ctx.stroke();
+            }
+            
+            // 纬线
+            for (let i = 1; i < 6; i++) {
+                const y = 50 + (i / 6) * mapHeight;
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(padding + mapWidth, y);
+                ctx.stroke();
+            }
+            
+            ctx.setLineDash([]);
+        }
+
+        // 绘制Peaks函数曲面
+        function drawSurfaceChart() {
+            const canvas = canvases.surface;
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            // 绘制标题
+            ctx.fillStyle = '#4a5568';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Peaks函数3D曲面', width / 2, 20);
+            
+            // 3D参数设置
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const scale = Math.min(width, height) * 0.06; // 增大比例
+            const resolution = 25; // 增加分辨率
+            const rotationX = 30 * Math.PI / 180; // X轴旋转角度
+            const rotationY = (surfaceRotation * Math.PI / 180); // Y轴旋转角度
+            const rotationZ = 0; // Z轴旋转角度
+            
+            // 获取当前颜色方案
+            const colors = colorSchemes[currentColorScheme];
+            
+            // 计算所有3D点并投影到2D
+            const points3D = [];
+            const points2D = [];
+            const zValues = [];
+            
+            for (let i = 0; i <= resolution; i++) {
+                points3D[i] = [];
+                points2D[i] = [];
+                zValues[i] = [];
+                for (let j = 0; j <= resolution; j++) {
+                    const x = -3.5 + (i / resolution) * 7; // 扩大范围
+                    const y = -3.5 + (j / resolution) * 7; // 扩大范围
+                    
+                    // 标准Peaks函数
+                    const z = 3 * (1 - x) * (1 - x) * Math.exp(-(x * x) - (y + 1) * (y + 1)) 
+                           - 10 * (x / 5 - x * x * x - y * y * y * y * y) * Math.exp(-(x * x) - (y * y)) 
+                           - 1 / 3 * Math.exp(-(x + 1) * (x + 1) - (y * y));
+                    
+                    // 3D变换矩阵计算
+                    const point3D = transform3D(x * scale, y * scale, z * scale, rotationX, rotationY, rotationZ);
+                    
+                    // 投影到2D屏幕坐标
+                    const point2D = {
+                        x: centerX + point3D.x,
+                        y: centerY - point3D.y, // Y轴翻转
+                        z: point3D.z // 深度信息用于排序
+                    };
+                    
+                    points3D[i][j] = point3D;
+                    points2D[i][j] = point2D;
+                    zValues[i][j] = z;
+                }
+            }
+            
+            // 找出z值的范围用于颜色映射
+            let zMin = 8, zMax = -8;
+            for (let i = 0; i <= resolution; i++) {
+                for (let j = 0; j <= resolution; j++) {
+                    zMin = Math.min(zMin, zValues[i][j]);
+                    zMax = Math.max(zMax, zValues[i][j]);
+                }
+            }
+            
+            // 绘制3D曲面 - 按深度排序绘制面片
+            const faces = [];
+            for (let i = 0; i < resolution; i++) {
+                for (let j = 0; j < resolution; j++) {
+                    const p1 = points2D[i][j];
+                    const p2 = points2D[i + 1][j];
+                    const p3 = points2D[i + 1][j + 1];
+                    const p4 = points2D[i][j + 1];
+                    
+                    // 计算面片的平均深度
+                    const avgDepth = (p1.z + p2.z + p3.z + p4.z) / 4;
+                    
+                    // 计算平均z值用于着色
+                    const avgZ = (zValues[i][j] + zValues[i + 1][j] + zValues[i + 1][j + 1] + zValues[i][j + 1]) / 4;
+                    
+                    // 根据z值选择颜色
+                    const colorIndex = Math.floor(((avgZ - zMin) / (zMax - zMin)) * (colors.length - 1));
+                    const color = colors[Math.max(0, Math.min(colors.length - 1, colorIndex))];
+                    
+                    faces.push({
+                        points: [p1, p2, p3, p4],
+                        depth: avgDepth,
+                        color: color,
+                        avgZ: avgZ
+                    });
+                }
+            }
+            
+            // 按深度排序（从远到近）
+            faces.sort((a, b) => b.depth - a.depth);
+            
+            // 绘制所有面片
+            faces.forEach(face => {
+                // 计算光照强度
+                const lightIntensity = Math.max(0.3, Math.min(1, (face.avgZ - zMin) / (zMax - zMin)));
+                
+                ctx.fillStyle = face.color + Math.floor(lightIntensity * 255).toString(16).padStart(2, '0');
+                ctx.strokeStyle = face.color + '88';
+                ctx.lineWidth = 0.5;
+                
+                ctx.beginPath();
+                ctx.moveTo(face.points[0].x, face.points[0].y);
+                ctx.lineTo(face.points[1].x, face.points[1].y);
+                ctx.lineTo(face.points[2].x, face.points[2].y);
+                ctx.lineTo(face.points[3].x, face.points[3].y);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            });
+            
+            // 绘制坐标轴 - 使用更大的轴长度
+            const axisScale = scale * 1.5;
+            draw3DAxes(ctx, centerX, centerY, axisScale, rotationX, rotationY, rotationZ);
+            
+            // 添加光照效果
+            const gradient = ctx.createRadialGradient(centerX, centerY - 50, 0, centerX, centerY, Math.min(width, height) * 0.4);
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 0.2)');
+            gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, width, height);
+            
+            // 添加图例
+            const legendX = width - 60;
+            const legendY = height * 0.2;
+            const legendHeight = height * 0.6;
+            
+            for (let i = 0; i < colors.length; i++) {
+                const y = legendY + (i / colors.length) * legendHeight;
+                const nextY = legendY + ((i + 1) / colors.length) * legendHeight;
+                
+                const gradient = ctx.createLinearGradient(legendX, y, legendX + 15, nextY);
+                gradient.addColorStop(0, colors[i]);
+                gradient.addColorStop(1, colors[i]);
+                
+                ctx.fillStyle = gradient;
+                ctx.fillRect(legendX, y, 15, nextY - y);
+            }
+            
+            // 图例标签
+            ctx.fillStyle = '#666';
+            ctx.font = '10px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText(`${zMax.toFixed(1)}`, legendX + 20, legendY + 10);
+            ctx.fillText(`${zMin.toFixed(1)}`, legendX + 20, legendY + legendHeight - 5);
+        }
+
+        // 3D变换函数
+        function transform3D(x, y, z, rotX, rotY, rotZ) {
+            // 绕Y轴旋转
+            let x1 = x * Math.cos(rotY) - z * Math.sin(rotY);
+            let z1 = x * Math.sin(rotY) + z * Math.cos(rotY);
+            
+            // 绕X轴旋转
+            let y1 = y * Math.cos(rotX) - z1 * Math.sin(rotX);
+            let z2 = y * Math.sin(rotX) + z1 * Math.cos(rotX);
+            
+            // 绕Z轴旋转
+            let x2 = x1 * Math.cos(rotZ) - y1 * Math.sin(rotZ);
+            let y2 = x1 * Math.sin(rotZ) + y1 * Math.cos(rotZ);
+            
+            return { x: x2, y: y2, z: z2 };
+        }
+
+        // 绘制3D坐标轴
+        function draw3DAxes(ctx, centerX, centerY, scale, rotX, rotY, rotZ) {
+            const axesLength = 2 * scale;
+            
+            // 原点
+            const origin = transform3D(0, 0, 0, rotX, rotY, rotZ);
+            
+            // X轴
+            const xAxis = transform3D(axesLength, 0, 0, rotX, rotY, rotZ);
+            
+            // Y轴
+            const yAxis = transform3D(0, axesLength, 0, rotX, rotY, rotZ);
+            
+            // Z轴
+            const zAxis = transform3D(0, 0, axesLength, rotX, rotY, rotZ);
+            
+            // 绘制坐标轴
+            ctx.lineWidth = 2;
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            
+            // X轴 - 红色
+            ctx.strokeStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.moveTo(centerX + origin.x, centerY - origin.y);
+            ctx.lineTo(centerX + xAxis.x, centerY - xAxis.y);
+            ctx.stroke();
+            ctx.fillStyle = '#ef4444';
+            ctx.fillText('X', centerX + xAxis.x + 10, centerY - xAxis.y);
+            
+            // Y轴 - 绿色
+            ctx.strokeStyle = '#22c55e';
+            ctx.beginPath();
+            ctx.moveTo(centerX + origin.x, centerY - origin.y);
+            ctx.lineTo(centerX + yAxis.x, centerY - yAxis.y);
+            ctx.stroke();
+            ctx.fillStyle = '#22c55e';
+            ctx.fillText('Y', centerX + yAxis.x, centerY - yAxis.y - 10);
+            
+            // Z轴 - 蓝色
+            ctx.strokeStyle = '#3b82f6';
+            ctx.beginPath();
+            ctx.moveTo(centerX + origin.x, centerY - origin.y);
+            ctx.lineTo(centerX + zAxis.x, centerY - zAxis.y);
+            ctx.stroke();
+            ctx.fillStyle = '#3b82f6';
+            ctx.fillText('Z', centerX + zAxis.x, centerY - zAxis.y);
+        }
+
+        // 控制函数
+        function regenerateBarChart() {
+            regenerateBarChartData();
+            // 自动播放生长动画
+            setTimeout(() => animateBarChart(), 100);
+        }
+
+        function animateBarChart() {
+            let progress = 0;
+            const animationDuration = 2000; // 2秒动画
+            const startTime = Date.now();
+            const originalData = [...barData];
+            
+            // 临时设置所有柱子高度为0
+            const tempData = barData.map(bar => ({...bar, z: 0}));
+            barData = tempData;
+            
+            const animate = () => {
+                const currentTime = Date.now();
+                progress = Math.min((currentTime - startTime) / animationDuration, 1);
+                
+                // 使用缓动函数
+                const easeProgress = easeOutElastic(progress);
+                
+                // 逐步恢复柱子高度
+                barData = originalData.map((bar, index) => {
+                    const delay = index * 0.1; // 每个柱子延迟一点开始
+                    const adjustedProgress = Math.max(0, Math.min(1, (progress - delay) / (1 - delay * 4)));
+                    const easedAdjustedProgress = easeOutElastic(adjustedProgress);
+                    return {
+                        ...bar,
+                        z: bar.z * easedAdjustedProgress
+                    };
+                });
+                
+                drawBarChart();
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    // 动画结束，恢复原始数据
+                    barData = originalData;
+                    drawBarChart();
+                }
+            };
+            
+            animate();
+        }
+
+        // 缓动函数 - 弹性效果
+        function easeOutElastic(x) {
+            const c4 = (2 * Math.PI) / 3;
+            return x === 0
+                ? 0
+                : x === 1
+                ? 1
+                : Math.pow(2, -10 * x) * Math.sin((x * 10 - 0.75) * c4) + 1;
+        }
+
+        function startWaveAnimation() {
+            if (waveAnimationId) return;
+            waveAnimationId = setInterval(() => {
+                wavePhase += 0.1;
+                drawWaveChart();
+            }, 50);
+        }
+
+        function stopWaveAnimation() {
+            if (waveAnimationId) {
+                clearInterval(waveAnimationId);
+                waveAnimationId = null;
+            }
+        }
+
+        function resetWave() {
+            stopWaveAnimation();
+            wavePhase = 0;
+            drawWaveChart();
+        }
+
+        function showFlightPath() {
+            flightProgress = 0;
+            drawMapChart(true);
+            // 添加脉冲效果
+            const canvas = canvases.map;
+            if (canvas) {
+                canvas.style.filter = 'brightness(1.2)';
+                setTimeout(() => {
+                    canvas.style.filter = 'brightness(1)';
+                }, 300);
+            }
+        }
+
+        function animateFlight() {
+            if (flightAnimationId) {
+                cancelAnimationFrame(flightAnimationId);
+                flightAnimationId = null;
+            }
+            
+            flightProgress = 0;
+            const animate = () => {
+                flightProgress += 0.005; // 控制飞行速度
+                
+                if (flightProgress >= 1) {
+                    flightProgress = 1;
+                    drawMapChart(true);
+                    return;
+                }
+                
+                drawMapChart(true);
+                flightAnimationId = requestAnimationFrame(animate);
+            };
+            animate();
+        }
+
+        function rotateSurface() {
+            const btn = document.getElementById('rotate-btn');
+            if (surfaceRotation !== null) {
+                // 如果已经在旋转，则停止
+                surfaceRotation = null;
+                if (surfaceAnimationId) {
+                    cancelAnimationFrame(surfaceAnimationId);
+                    surfaceAnimationId = null;
+                }
+                btn.textContent = '旋转视角';
+            } else {
+                // 开始缓慢持续旋转
+                surfaceRotation = 0;
+                btn.textContent = '停止旋转';
+                const animate = () => {
+                    if (surfaceRotation !== null) {
+                        surfaceRotation = (surfaceRotation + 0.5) % 360; // 缓慢旋转，每帧0.5度
+                        drawSurfaceChart();
+                        surfaceAnimationId = requestAnimationFrame(animate);
+                    }
+                };
+                animate();
+            }
+        }
+
+        function changeColorScheme() {
+            currentColorScheme = (currentColorScheme + 1) % colorSchemes.length;
+            drawSurfaceChart();
+        }
+
+        // 创建细闪效果
+        function createSparkles() {
+            const sparklesContainer = document.getElementById('sparkles');
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => {
+                    const sparkle = document.createElement('div');
+                    sparkle.className = 'sparkle';
+                    sparkle.style.left = Math.random() * 100 + '%';
+                    sparkle.style.top = Math.random() * 100 + '%';
+                    sparkle.style.animationDelay = Math.random() * 3 + 's';
+                    sparklesContainer.appendChild(sparkle);
+                    
+                    setTimeout(() => sparkle.remove(), 3000);
+                }, i * 200);
+            }
+        }
+
+        // 定期创建细闪
+        setInterval(createSparkles, 5000);
+        createSparkles();
+
+        // 页面加载完成后初始化
+        window.addEventListener('DOMContentLoaded', function() {
+            initCanvases();
+            
+            // 窗口大小调整时重新绘制
+            window.addEventListener('resize', function() {
+                initCanvases();
+            });
+        });
+    </script>
+</body>
+</html>
